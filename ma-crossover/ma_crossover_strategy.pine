@@ -1,0 +1,41 @@
+//@version=5
+strategy("MA Crossover Strategy",
+     overlay=true,
+     initial_capital=100000,
+     slippage=1,
+     commission_type=strategy.commission.percent,
+     commission_value=0.05,
+     default_qty_type = strategy.percent_of_equity,
+     default_qty_value = 90)
+
+// Inputs
+fastLen = input.int(10, "Fast MA Length", minval=1)
+slowLen = input.int(50, "Slow MA Length", minval=1)
+
+// Moving averages
+fastMA = ta.ema(close, fastLen)
+slowMA = ta.ema(close, slowLen)
+
+plot(fastMA, color=color.yellow, title="Fast MA")
+plot(slowMA, color=color.blue, title="Slow MA")
+
+// Entry / Exit conditions
+longEntry = ta.crossover(fastMA, slowMA)
+longExit  = ta.crossunder(fastMA, slowMA)
+
+if longEntry
+    strategy.entry("Long", strategy.long)
+
+if longExit
+    strategy.close("Long")
+
+// Risk: SL / TP
+slPercent = input.float(3.0, "Stop Loss %", step=0.1)
+tpPercent = input.float(10.0, "Take Profit %", step=0.1)
+
+if strategy.position_size > 0
+    strategy.exit("Exit","Long", stop=strategy.position_avg_price*(1-slPercent/100), limit=strategy.position_avg_price*(1+tpPercent/100))
+    
+// Visual signals
+plotshape(longEntry, title="Buy", style=shape.triangleup, color=color.green, size=size.small, location=location.belowbar)
+plotshape(longExit, title="Sell", style=shape.triangledown, color=color.red, size=size.small, location=location.abovebar)
